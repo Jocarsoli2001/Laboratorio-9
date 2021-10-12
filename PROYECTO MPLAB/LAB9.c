@@ -37,14 +37,11 @@
 #define _XTAL_FREQ 8000000
 
 //-----------------------Constantes----------------------------------
-#define  valor_tmr0 237                     // valor_tmr0 = 237
+#define  valor_tmr0 225                     // valor_tmr0 = 255 (0.12 ms)
 
 //-----------------------Variables------------------------------------
-int cont2 = 0;
-int cont_vol = 0;
-uint8_t digi = 0;
-uint8_t  disp_selector = 0b001;
-int dig[3];
+int cont = 0;
+int limite = 0;
 
 //------------Funciones sin retorno de variables----------------------
 void setup(void);                           // Función de setup
@@ -60,18 +57,29 @@ int  tabla_p(int a);                            // Tabla que traduce valores a d
 void __interrupt() isr(void){
     if(PIR1bits.ADIF){
         if(ADCON0bits.CHS == 1){                // Si el channel es 1 (puerto AN1)
-            CCPR2L = (ADRESH>>1)+128;           // ADRESH = CCPR2L (duty cycle de 118 a 255)
+            CCPR2L = (ADRESH>>1)+124;           // ADRESH = CCPR2L (duty cycle de 118 a 255)
+            CCP2CONbits.DC2B1 = ADRESH & 0b01;  
+            CCP2CONbits.DC2B0 = (ADRESL>>7);
             
         }
         else if (ADCON0bits.CHS == 0){          // Si input channel = 0 (puerto AN0)
             CCPR1L = (ADRESH>>1)+124;           // ADRESH = CCPR1L (duty cycle de 131 a 255)
             CCP1CONbits.DC1B1 = ADRESH & 0b01;  
             CCP1CONbits.DC1B0 = (ADRESL>>7);
-        }                                   
+        } 
+        else if (ADCON0bits.CHS == 2){
+            limite = ADRESH;
+        }
         PIR1bits.ADIF = 0;                      // Limpiar bander de interrupción ADC
     }
     if(T0IF){
         tmr0();                                 // Mostrar displays en interrupción de Timer 0
+        PORTCbits.RC3 = 1;                      // PORTC, bit 3 = 1
+        cont++;                                 // Aumentar contador en cada interrupción de timer 0
+        if(cont = limite){
+            PORTCbits.RC3 = 0;                  // Si cont == valor traducido de potenciómetro, entonces RC3 = 0
+            cont = 0;                           // Reiniciar variable cont
+        }
     }
 }
 
@@ -83,17 +91,17 @@ void main(void) {
         if(ADCON0bits.GO == 0){             // Si bit GO = 0
             if(ADCON0bits.CHS == 2){        // Si Input Channel = AN1
                 ADCON0bits.CHS = 1;         // Asignar input Channel = AN0
-                __delay_us(150);            // Delay de 50 ms
+                __delay_us(10);            // Delay de 50 ms
             }
             else if (ADCON0bits.CHS == 1){  // Si Input Channel = AN0
                 ADCON0bits.CHS = 0;         // Asignar Input Channel = AN1
-                __delay_us(150);
+                __delay_us(10);
             }
             else {
                 ADCON0bits.CHS = 2;
-                __delay_us(150);
+                __delay_us(10);
             }
-            __delay_us(200);
+            __delay_us(10);
             ADCON0bits.GO = 1;              // Asignar bit GO = 1
         } 
     }
@@ -111,7 +119,6 @@ void setup(void){
     TRISD = 0;                              // PORTD como salida                           
     TRISE = 0;                              // PORTE como salida
     
-    PORTA = 0;                              // Limpiar PORTA
     PORTD = 0;                              // Limpiar PORTD
     PORTC = 0;                              // Limpiar PORTC
     PORTE = 0;                              // Limpiar PORTE
@@ -177,7 +184,7 @@ void setup(void){
 
 void tmr0(void){
     INTCONbits.T0IF = 0;                    // Limpiar bandera de TIMER 0
-    TMR0 = valor_tmr0;                      // TMR0 = 237
+    TMR0 = valor_tmr0;                      // TMR0 = 255
     return;
 }
 

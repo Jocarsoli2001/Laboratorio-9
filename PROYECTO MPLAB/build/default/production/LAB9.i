@@ -2745,11 +2745,8 @@ extern int sprintf(char *, const char *, ...);
 extern int printf(const char *, ...);
 # 34 "LAB9.c" 2
 # 43 "LAB9.c"
-int cont2 = 0;
-int cont_vol = 0;
-uint8_t digi = 0;
-uint8_t disp_selector = 0b001;
-int dig[3];
+int cont = 0;
+int limite = 0;
 
 
 void setup(void);
@@ -2765,7 +2762,9 @@ int tabla_p(int a);
 void __attribute__((picinterrupt(("")))) isr(void){
     if(PIR1bits.ADIF){
         if(ADCON0bits.CHS == 1){
-            CCPR2L = (ADRESH>>1)+128;
+            CCPR2L = (ADRESH>>1)+124;
+            CCP2CONbits.DC2B1 = ADRESH & 0b01;
+            CCP2CONbits.DC2B0 = (ADRESL>>7);
 
         }
         else if (ADCON0bits.CHS == 0){
@@ -2773,10 +2772,19 @@ void __attribute__((picinterrupt(("")))) isr(void){
             CCP1CONbits.DC1B1 = ADRESH & 0b01;
             CCP1CONbits.DC1B0 = (ADRESL>>7);
         }
+        else if (ADCON0bits.CHS == 2){
+            limite = ADRESH;
+        }
         PIR1bits.ADIF = 0;
     }
     if(T0IF){
         tmr0();
+        PORTCbits.RC3 = 1;
+        cont++;
+        if(cont = limite){
+            PORTCbits.RC3 = 0;
+            cont = 0;
+        }
     }
 }
 
@@ -2788,17 +2796,17 @@ void main(void) {
         if(ADCON0bits.GO == 0){
             if(ADCON0bits.CHS == 2){
                 ADCON0bits.CHS = 1;
-                _delay((unsigned long)((150)*(8000000/4000000.0)));
+                _delay((unsigned long)((10)*(8000000/4000000.0)));
             }
             else if (ADCON0bits.CHS == 1){
                 ADCON0bits.CHS = 0;
-                _delay((unsigned long)((150)*(8000000/4000000.0)));
+                _delay((unsigned long)((10)*(8000000/4000000.0)));
             }
             else {
                 ADCON0bits.CHS = 2;
-                _delay((unsigned long)((150)*(8000000/4000000.0)));
+                _delay((unsigned long)((10)*(8000000/4000000.0)));
             }
-            _delay((unsigned long)((200)*(8000000/4000000.0)));
+            _delay((unsigned long)((10)*(8000000/4000000.0)));
             ADCON0bits.GO = 1;
         }
     }
@@ -2816,7 +2824,6 @@ void setup(void){
     TRISD = 0;
     TRISE = 0;
 
-    PORTA = 0;
     PORTD = 0;
     PORTC = 0;
     PORTE = 0;
@@ -2832,7 +2839,7 @@ void setup(void){
     OPTION_REGbits.PS2 = 1;
     OPTION_REGbits.PS1 = 1;
     OPTION_REGbits.PS0 = 1;
-    TMR0 = 237;
+    TMR0 = 225;
 
 
     ADCON1bits.ADFM = 0;
@@ -2882,6 +2889,6 @@ void setup(void){
 
 void tmr0(void){
     INTCONbits.T0IF = 0;
-    TMR0 = 237;
+    TMR0 = 225;
     return;
 }
