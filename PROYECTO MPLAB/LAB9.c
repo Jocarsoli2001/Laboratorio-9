@@ -53,24 +53,25 @@ void tmr0(void);                            // Función para reiniciar TMR0
 void displays(void);                        // Función para alternar valores mostrados en displays
 
 //-------------Funciones que retornan variables-----------------------
-int  tabla(int a);                          // Tabla para traducir valores a displays de 7 segmentos
-int  tabla_p(int a);                        // Tabla que traduce valores a displays de 7 segmentos pero con punto decimal incluido
+int  tabla(int a);                              // Tabla para traducir valores a displays de 7 segmentos
+int  tabla_p(int a);                            // Tabla que traduce valores a displays de 7 segmentos pero con punto decimal incluido
 
 //----------------------Interrupciones--------------------------------
 void __interrupt() isr(void){
     if(PIR1bits.ADIF){
-        if(ADCON0bits.CHS == 1){            // Si el channel es 1 (puerto AN1)
-            CCPR2L = (ADRESH>>1)+118;       // ADRESH = CCPR2L (duty cycle de 118 a 255)
+        if(ADCON0bits.CHS == 1){                // Si el channel es 1 (puerto AN1)
+            CCPR2L = (ADRESH>>1)+128;           // ADRESH = CCPR2L (duty cycle de 118 a 255)
             
         }
-        else{                               // Si input channel = 0 (puerto AN0)
-            CCPR1L = (ADRESH>>1)+118;       // ADRESH = CCPR1L (duty cycle de 118 a 255)
+        else if (ADCON0bits.CHS == 0){          // Si input channel = 0 (puerto AN0)
+            CCPR1L = (ADRESH>>1)+124;           // ADRESH = CCPR1L (duty cycle de 131 a 255)
+            CCP1CONbits.DC1B1 = ADRESH & 0b01;  
+            CCP1CONbits.DC1B0 = (ADRESL>>7);
         }                                   
-        PIR1bits.ADIF = 0;                  // Limpiar bander de interrupción ADC
+        PIR1bits.ADIF = 0;                      // Limpiar bander de interrupción ADC
     }
     if(T0IF){
-        tmr0();                             // Mostrar displays en interrupción de Timer 0
-        displays();
+        tmr0();                                 // Mostrar displays en interrupción de Timer 0
     }
 }
 
@@ -80,12 +81,16 @@ void main(void) {
     ADCON0bits.GO = 1;                      // Comenzar conversión ADC 
     while(1){
         if(ADCON0bits.GO == 0){             // Si bit GO = 0
-            if(ADCON0bits.CHS == 1){        // Si Input Channel = AN1
-                ADCON0bits.CHS = 0;         // Asignar input Channel = AN0
-                __delay_us(150);             // Delay de 50 ms
+            if(ADCON0bits.CHS == 2){        // Si Input Channel = AN1
+                ADCON0bits.CHS = 1;         // Asignar input Channel = AN0
+                __delay_us(150);            // Delay de 50 ms
             }
-            else{                           // Si Input Channel = AN0
-                ADCON0bits.CHS = 1;         // Asignar Input Channel = AN1
+            else if (ADCON0bits.CHS == 1){  // Si Input Channel = AN0
+                ADCON0bits.CHS = 0;         // Asignar Input Channel = AN1
+                __delay_us(150);
+            }
+            else {
+                ADCON0bits.CHS = 2;
                 __delay_us(150);
             }
             __delay_us(200);
@@ -176,101 +181,3 @@ void tmr0(void){
     return;
 }
 
-void divisor(void){
-    for(int i = 0; i<3 ; i++){              // De i = 0 hasta i = 2
-        dig[i] = cont_vol % 10;             // array[i] = cont_vol mod 10(retornar residuo). Devuelve digito por dígito de un número.
-        cont_vol = (cont_vol - dig[i])/10;  // cont_vol = valor sin último digito.
-    }
-}
-
-void displays(void){
-    PORTE = disp_selector;                  // PORTE = 0b001
-    if(disp_selector == 0b001){             // Si disp_selector = 0b001
-        PORTD = tabla(dig[0]);              // PORTD = valor traducido de posición 0 de array dig[]
-        disp_selector = 0b010;              // disp_selector = 0b010
-    }
-    else if(disp_selector == 0b010){        // Si disp_selector = 0b010
-        PORTD = tabla(dig[1]);              // PORTD = valor traducido de posición 1 de array dig[]
-        disp_selector = 0b100;              // disp_selector = 0b100
-    }
-    else if(disp_selector == 0b100){        // Si disp_selector = 0b100
-        PORTD = tabla_p(dig[2]);            // PORTD = valor traducido de posición 2 de array dig[]
-        disp_selector = 0b001;              // disp_selector = 0b001
-    }
-}
-
-int tabla(int a){
-    switch (a){                             // Ingresar valor de "a" a switch case
-        case 0:                             // Si a = 0
-            return 0b00111111;              // devolver valor 0b00111111
-            break;
-        case 1:                             // Si a = 1
-            return 0b00000110;              // devolver valor 0b00000110 
-            break;
-        case 2:                             // Si a = 2
-            return 0b01011011;              // devolver valor 0b01011011
-            break;
-        case 3:                             // Si a = 3
-            return 0b01001111;              // devolver valor 0b01001111
-            break;
-        case 4:                             // Si a = 4
-            return 0b01100110;              // devolver valor 0b01100110
-            break;
-        case 5:                             // Si a = 5
-            return 0b01101101;              // devolver valor 0b01101101
-            break;
-        case 6:                             // Si a = 6
-            return 0b01111101;              // devolver valor 0b01111101
-            break;
-        case 7:                             // Si a = 7
-            return 0b00000111;              // devolver valor 0b01111101
-            break;
-        case 8:                             // Si a = 8
-            return 0b01111111;              // devolver valor 0b01111111
-            break;
-        case 9:                             // Si a = 9
-            return 0b01101111;              // devolver valor 0b01101111
-            break;
-        default:
-            break;
-            
-    }
-}
- 
-int tabla_p(int a){
-    switch (a){                             // Ingresar valor de "a" a switch case
-        case 0:                             // Si a = 0
-            return 0b10111111;              // devolver valor 0b10111111
-            break;
-        case 1:                             // Si a = 1
-            return 0b10000110;              // devolver valor 0b10000110 
-            break;
-        case 2:                             // Si a = 2
-            return 0b11011011;              // devolver valor 0b11011011
-            break;
-        case 3:                             // Si a = 3
-            return 0b11001111;              // devolver valor 0b11001111
-            break;
-        case 4:                             // Si a = 4
-            return 0b11100110;              // devolver valor 0b11100110
-            break;
-        case 5:                             // Si a = 5
-            return 0b11101101;              // devolver valor 0b11101101
-            break;
-        case 6:                             // Si a = 6
-            return 0b11111101;              // devolver valor 0b11111101
-            break;
-        case 7:                             // Si a = 7
-            return 0b10000111;              // devolver valor 0b11111101
-            break;
-        case 8:                             // Si a = 8
-            return 0b11111111;              // devolver valor 0b11111111
-            break;
-        case 9:                             // Si a = 9
-            return 0b11101111;              // devolver valor 0b11101111
-            break;
-        default:
-            break;
-            
-    }
-}

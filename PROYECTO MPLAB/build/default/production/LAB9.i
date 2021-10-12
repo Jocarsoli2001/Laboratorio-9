@@ -2765,17 +2765,18 @@ int tabla_p(int a);
 void __attribute__((picinterrupt(("")))) isr(void){
     if(PIR1bits.ADIF){
         if(ADCON0bits.CHS == 1){
-            CCPR2L = (ADRESH>>1)+118;
+            CCPR2L = (ADRESH>>1)+128;
 
         }
-        else{
-            CCPR1L = (ADRESH>>1)+118;
+        else if (ADCON0bits.CHS == 0){
+            CCPR1L = (ADRESH>>1)+124;
+            CCP1CONbits.DC1B1 = ADRESH & 0b01;
+            CCP1CONbits.DC1B0 = (ADRESL>>7);
         }
         PIR1bits.ADIF = 0;
     }
     if(T0IF){
         tmr0();
-        displays();
     }
 }
 
@@ -2785,12 +2786,16 @@ void main(void) {
     ADCON0bits.GO = 1;
     while(1){
         if(ADCON0bits.GO == 0){
-            if(ADCON0bits.CHS == 1){
+            if(ADCON0bits.CHS == 2){
+                ADCON0bits.CHS = 1;
+                _delay((unsigned long)((150)*(8000000/4000000.0)));
+            }
+            else if (ADCON0bits.CHS == 1){
                 ADCON0bits.CHS = 0;
                 _delay((unsigned long)((150)*(8000000/4000000.0)));
             }
-            else{
-                ADCON0bits.CHS = 1;
+            else {
+                ADCON0bits.CHS = 2;
                 _delay((unsigned long)((150)*(8000000/4000000.0)));
             }
             _delay((unsigned long)((200)*(8000000/4000000.0)));
@@ -2879,103 +2884,4 @@ void tmr0(void){
     INTCONbits.T0IF = 0;
     TMR0 = 237;
     return;
-}
-
-void divisor(void){
-    for(int i = 0; i<3 ; i++){
-        dig[i] = cont_vol % 10;
-        cont_vol = (cont_vol - dig[i])/10;
-    }
-}
-
-void displays(void){
-    PORTE = disp_selector;
-    if(disp_selector == 0b001){
-        PORTD = tabla(dig[0]);
-        disp_selector = 0b010;
-    }
-    else if(disp_selector == 0b010){
-        PORTD = tabla(dig[1]);
-        disp_selector = 0b100;
-    }
-    else if(disp_selector == 0b100){
-        PORTD = tabla_p(dig[2]);
-        disp_selector = 0b001;
-    }
-}
-
-int tabla(int a){
-    switch (a){
-        case 0:
-            return 0b00111111;
-            break;
-        case 1:
-            return 0b00000110;
-            break;
-        case 2:
-            return 0b01011011;
-            break;
-        case 3:
-            return 0b01001111;
-            break;
-        case 4:
-            return 0b01100110;
-            break;
-        case 5:
-            return 0b01101101;
-            break;
-        case 6:
-            return 0b01111101;
-            break;
-        case 7:
-            return 0b00000111;
-            break;
-        case 8:
-            return 0b01111111;
-            break;
-        case 9:
-            return 0b01101111;
-            break;
-        default:
-            break;
-
-    }
-}
-
-int tabla_p(int a){
-    switch (a){
-        case 0:
-            return 0b10111111;
-            break;
-        case 1:
-            return 0b10000110;
-            break;
-        case 2:
-            return 0b11011011;
-            break;
-        case 3:
-            return 0b11001111;
-            break;
-        case 4:
-            return 0b11100110;
-            break;
-        case 5:
-            return 0b11101101;
-            break;
-        case 6:
-            return 0b11111101;
-            break;
-        case 7:
-            return 0b10000111;
-            break;
-        case 8:
-            return 0b11111111;
-            break;
-        case 9:
-            return 0b11101111;
-            break;
-        default:
-            break;
-
-    }
 }
