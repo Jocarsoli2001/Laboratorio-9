@@ -34,7 +34,7 @@
 #include <stdio.h>
 
 //-----------------Definición de frecuencia de cristal---------------
-#define _XTAL_FREQ 4000000
+#define _XTAL_FREQ 8000000
 
 //-----------------------Constantes----------------------------------
 #define  valor_tmr0 237                     // valor_tmr0 = 237
@@ -60,12 +60,12 @@ int  tabla_p(int a);                        // Tabla que traduce valores a displ
 void __interrupt() isr(void){
     if(PIR1bits.ADIF){
         if(ADCON0bits.CHS == 1){            // Si el channel es 1 (puerto AN1)
-            cont_vol = 2*ADRESH;            // Valor analógico traducido = cont_vol
-            divisor();                      // Llamar subrutina de divisor
+            CCPR2L = (ADRESH>>1)+118;       // ADRESH = CCPR2L (duty cycle de 118 a 255)
+            
         }
-        else{
-            PORTC = ADRESH;                 // Si channel select = 0
-        }                                   //   entonces asignar PORTC = ADRESH
+        else{                               // Si input channel = 0 (puerto AN0)
+            CCPR1L = (ADRESH>>1)+118;       // ADRESH = CCPR1L (duty cycle de 118 a 255)
+        }                                   
         PIR1bits.ADIF = 0;                  // Limpiar bander de interrupción ADC
     }
     if(T0IF){
@@ -82,13 +82,13 @@ void main(void) {
         if(ADCON0bits.GO == 0){             // Si bit GO = 0
             if(ADCON0bits.CHS == 1){        // Si Input Channel = AN1
                 ADCON0bits.CHS = 0;         // Asignar input Channel = AN0
-                __delay_us(50);             // Delay de 50 ms
+                __delay_us(150);             // Delay de 50 ms
             }
             else{                           // Si Input Channel = AN0
                 ADCON0bits.CHS = 1;         // Asignar Input Channel = AN1
-                __delay_us(50);
+                __delay_us(150);
             }
-            __delay_us(50);
+            __delay_us(200);
             ADCON0bits.GO = 1;              // Asignar bit GO = 1
         } 
     }
@@ -98,10 +98,10 @@ void main(void) {
 void setup(void){
     
     //Configuración de entradas y salidas
-    ANSEL = 0b00000011;                     // Pines 0 y 1 de PORTA como analógicos
+    ANSEL = 0b00000111;                     // Pines 0 y 1 de PORTA como analógicos
     ANSELH = 0;
     
-    TRISA = 0b00000011;                     // PORTA, bit 0 y 1 como entrada analógica
+    TRISA = 0b00000111;                     // PORTA, bit 0 y 1 como entrada analógica
     TRISC = 0;                              // PORTC como salida
     TRISD = 0;                              // PORTD como salida                           
     TRISE = 0;                              // PORTE como salida
@@ -112,7 +112,7 @@ void setup(void){
     PORTE = 0;                              // Limpiar PORTE
     
     //Configuración de oscilador
-    OSCCONbits.IRCF = 0b0110;               // Oscilador a 4 MHz = 110
+    OSCCONbits.IRCF = 0b0111;               // Oscilador a 8 MHz = 111
     OSCCONbits.SCS = 1;
     
     //Configuración de TMR0
@@ -129,7 +129,7 @@ void setup(void){
     ADCON1bits.VCFG0 = 0;                   // Voltaje 0 de referencia = VSS
     ADCON1bits.VCFG1 = 0;                   // Voltaje 1 de referencia = VDD
     
-    ADCON0bits.ADCS = 0b01;                 // Conversión ADC generada a 2us
+    ADCON0bits.ADCS = 0b10;                 // Conversión ADC generada con FOSC/32
     ADCON0bits.CHS = 0;                     // Input Channel = AN0
     ADCON0bits.ADON = 1;                    // ADC = enabled
     __delay_us(50);
@@ -141,6 +141,31 @@ void setup(void){
     PIR1bits.ADIF = 0;                      // Limpiar bandera de interrupción del ADC
     PIE1bits.ADIE = 1;                      // Interrupción ADC = enabled
     INTCONbits.PEIE = 1;                    // Interrupciones periféricas activadas
+    
+    //Configuración de PWM
+    TRISCbits.TRISC2 = 1;                   // RC2/CCP1 como entrada
+    TRISCbits.TRISC1 = 1;                   // RC1/CCP2 como entrada
+    PR2 = 255;                              // Frecuencia de TMR2 = 2 us
+    CCP1CONbits.P1M = 0;                    // Solo una salida en CCP1
+    CCP1CONbits.CCP1M = 0b1100;             // Modo de PWM
+    CCP2CONbits.CCP2M = 0b1100;             // Modo de PWM para CCP2
+    
+    CCPR1L = 0x0f;                          // Duty cicle inicial del PWM en CCP1 y CCP2
+    CCPR2L = 0x0f;
+    CCP2CONbits.DC2B0 = 0;                  // Bits menos significativos de CCP2
+    CCP2CONbits.DC2B1 = 0;
+    CCP1CONbits.DC1B = 0;                   // Bits menor significativos de CCP1
+    
+    //Configuración del Timer 2
+    PIR1bits.TMR2IF = 0;                    // Limpiar bandera de TMR2
+    T2CONbits.T2CKPS = 0b11;                // Prescaler en 1:16
+    T2CONbits.TMR2ON = 1;
+    
+    while(PIR1bits.TMR2IF == 0);            // Esperar un ciclo de TMR2
+    PIR1bits.TMR2IF = 0;                    // Limpiar bandera de TMR2
+    
+    TRISCbits.TRISC2 = 0;                   // Salida 1 del PWM en RC2
+    TRISCbits.TRISC1 = 0;                   // Salida 2 del PWM en RC1
     
     return;
 }

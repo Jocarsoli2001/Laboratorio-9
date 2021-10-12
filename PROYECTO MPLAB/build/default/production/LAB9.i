@@ -2765,11 +2765,11 @@ int tabla_p(int a);
 void __attribute__((picinterrupt(("")))) isr(void){
     if(PIR1bits.ADIF){
         if(ADCON0bits.CHS == 1){
-            cont_vol = 2*ADRESH;
-            divisor();
+            CCPR2L = (ADRESH>>1)+118;
+
         }
         else{
-            PORTC = ADRESH;
+            CCPR1L = (ADRESH>>1)+118;
         }
         PIR1bits.ADIF = 0;
     }
@@ -2787,13 +2787,13 @@ void main(void) {
         if(ADCON0bits.GO == 0){
             if(ADCON0bits.CHS == 1){
                 ADCON0bits.CHS = 0;
-                _delay((unsigned long)((50)*(4000000/4000000.0)));
+                _delay((unsigned long)((150)*(8000000/4000000.0)));
             }
             else{
                 ADCON0bits.CHS = 1;
-                _delay((unsigned long)((50)*(4000000/4000000.0)));
+                _delay((unsigned long)((150)*(8000000/4000000.0)));
             }
-            _delay((unsigned long)((50)*(4000000/4000000.0)));
+            _delay((unsigned long)((200)*(8000000/4000000.0)));
             ADCON0bits.GO = 1;
         }
     }
@@ -2803,10 +2803,10 @@ void main(void) {
 void setup(void){
 
 
-    ANSEL = 0b00000011;
+    ANSEL = 0b00000111;
     ANSELH = 0;
 
-    TRISA = 0b00000011;
+    TRISA = 0b00000111;
     TRISC = 0;
     TRISD = 0;
     TRISE = 0;
@@ -2817,7 +2817,7 @@ void setup(void){
     PORTE = 0;
 
 
-    OSCCONbits.IRCF = 0b0110;
+    OSCCONbits.IRCF = 0b0111;
     OSCCONbits.SCS = 1;
 
 
@@ -2834,10 +2834,10 @@ void setup(void){
     ADCON1bits.VCFG0 = 0;
     ADCON1bits.VCFG1 = 0;
 
-    ADCON0bits.ADCS = 0b01;
+    ADCON0bits.ADCS = 0b10;
     ADCON0bits.CHS = 0;
     ADCON0bits.ADON = 1;
-    _delay((unsigned long)((50)*(4000000/4000000.0)));
+    _delay((unsigned long)((50)*(8000000/4000000.0)));
 
 
     INTCONbits.T0IF = 0;
@@ -2846,6 +2846,31 @@ void setup(void){
     PIR1bits.ADIF = 0;
     PIE1bits.ADIE = 1;
     INTCONbits.PEIE = 1;
+
+
+    TRISCbits.TRISC2 = 1;
+    TRISCbits.TRISC1 = 1;
+    PR2 = 255;
+    CCP1CONbits.P1M = 0;
+    CCP1CONbits.CCP1M = 0b1100;
+    CCP2CONbits.CCP2M = 0b1100;
+
+    CCPR1L = 0x0f;
+    CCPR2L = 0x0f;
+    CCP2CONbits.DC2B0 = 0;
+    CCP2CONbits.DC2B1 = 0;
+    CCP1CONbits.DC1B = 0;
+
+
+    PIR1bits.TMR2IF = 0;
+    T2CONbits.T2CKPS = 0b11;
+    T2CONbits.TMR2ON = 1;
+
+    while(PIR1bits.TMR2IF == 0);
+    PIR1bits.TMR2IF = 0;
+
+    TRISCbits.TRISC2 = 0;
+    TRISCbits.TRISC1 = 0;
 
     return;
 }
