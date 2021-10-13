@@ -2745,7 +2745,7 @@ extern int sprintf(char *, const char *, ...);
 extern int printf(const char *, ...);
 # 34 "LAB9.c" 2
 # 43 "LAB9.c"
-int cont = 0;
+char cont = 0;
 int limite = 0;
 
 
@@ -2779,11 +2779,12 @@ void __attribute__((picinterrupt(("")))) isr(void){
     }
     if(T0IF){
         tmr0();
-        PORTCbits.RC3 = 1;
         cont++;
-        if(cont = limite){
+        if(cont >= limite){
             PORTCbits.RC3 = 0;
-            cont = 0;
+        }
+        else {
+            PORTCbits.RC3 = 1;
         }
     }
 }
@@ -2796,17 +2797,17 @@ void main(void) {
         if(ADCON0bits.GO == 0){
             if(ADCON0bits.CHS == 2){
                 ADCON0bits.CHS = 1;
-                _delay((unsigned long)((10)*(8000000/4000000.0)));
+                _delay((unsigned long)((50)*(8000000/4000000.0)));
             }
             else if (ADCON0bits.CHS == 1){
                 ADCON0bits.CHS = 0;
-                _delay((unsigned long)((10)*(8000000/4000000.0)));
+                _delay((unsigned long)((50)*(8000000/4000000.0)));
             }
             else {
                 ADCON0bits.CHS = 2;
-                _delay((unsigned long)((10)*(8000000/4000000.0)));
+                _delay((unsigned long)((50)*(8000000/4000000.0)));
             }
-            _delay((unsigned long)((10)*(8000000/4000000.0)));
+            _delay((unsigned long)((50)*(8000000/4000000.0)));
             ADCON0bits.GO = 1;
         }
     }
@@ -2835,11 +2836,11 @@ void setup(void){
 
     OPTION_REGbits.T0CS = 0;
     OPTION_REGbits.T0SE = 0;
-    OPTION_REGbits.PSA = 0;
-    OPTION_REGbits.PS2 = 1;
-    OPTION_REGbits.PS1 = 1;
-    OPTION_REGbits.PS0 = 1;
-    TMR0 = 225;
+    OPTION_REGbits.PSA = 1;
+    OPTION_REGbits.PS2 = 0;
+    OPTION_REGbits.PS1 = 0;
+    OPTION_REGbits.PS0 = 0;
+    TMR0 = 156;
 
 
     ADCON1bits.ADFM = 0;
@@ -2849,7 +2850,7 @@ void setup(void){
     ADCON0bits.ADCS = 0b10;
     ADCON0bits.CHS = 0;
     ADCON0bits.ADON = 1;
-    _delay((unsigned long)((50)*(8000000/4000000.0)));
+    _delay((unsigned long)((200)*(8000000/4000000.0)));
 
 
     INTCONbits.T0IF = 0;
@@ -2889,6 +2890,6 @@ void setup(void){
 
 void tmr0(void){
     INTCONbits.T0IF = 0;
-    TMR0 = 225;
+    TMR0 = 156;
     return;
 }

@@ -37,17 +37,17 @@
 #define _XTAL_FREQ 8000000
 
 //-----------------------Constantes----------------------------------
-#define  valor_tmr0 225                     // valor_tmr0 = 255 (0.12 ms)
+#define  valor_tmr0 156                        // valor_tmr0 = 156 (0.05 ms)
 
 //-----------------------Variables------------------------------------
-int cont = 0;
+char cont = 0;
 int limite = 0;
 
 //------------Funciones sin retorno de variables----------------------
-void setup(void);                           // Función de setup
-void divisor(void);                         // Función para dividir números en dígitos
-void tmr0(void);                            // Función para reiniciar TMR0
-void displays(void);                        // Función para alternar valores mostrados en displays
+void setup(void);                               // Función de setup
+void divisor(void);                             // Función para dividir números en dígitos
+void tmr0(void);                                // Función para reiniciar TMR0
+void displays(void);                            // Función para alternar valores mostrados en displays
 
 //-------------Funciones que retornan variables-----------------------
 int  tabla(int a);                              // Tabla para traducir valores a displays de 7 segmentos
@@ -73,36 +73,37 @@ void __interrupt() isr(void){
         PIR1bits.ADIF = 0;                      // Limpiar bander de interrupción ADC
     }
     if(T0IF){
-        tmr0();                                 // Mostrar displays en interrupción de Timer 0
-        PORTCbits.RC3 = 1;                      // PORTC, bit 3 = 1
+        tmr0();                                 // Reiniciar TMR0
         cont++;                                 // Aumentar contador en cada interrupción de timer 0
-        if(cont = limite){
-            PORTCbits.RC3 = 0;                  // Si cont == valor traducido de potenciómetro, entonces RC3 = 0
-            cont = 0;                           // Reiniciar variable cont
+        if(cont >= limite){
+            PORTCbits.RC3 = 0;                  // Si cont >= valor traducido de potenciómetro, entonces RC3 = 0
+        }
+        else {
+            PORTCbits.RC3 = 1;                  // PORTC, bit 3 = 1
         }
     }
 }
 
 //----------------------Main Loop--------------------------------
 void main(void) {
-    setup();                                // Subrutina de setup
-    ADCON0bits.GO = 1;                      // Comenzar conversión ADC 
+    setup();                                    // Subrutina de setup
+    ADCON0bits.GO = 1;                          // Comenzar conversión ADC 
     while(1){
-        if(ADCON0bits.GO == 0){             // Si bit GO = 0
-            if(ADCON0bits.CHS == 2){        // Si Input Channel = AN1
-                ADCON0bits.CHS = 1;         // Asignar input Channel = AN0
-                __delay_us(10);            // Delay de 50 ms
+        if(ADCON0bits.GO == 0){                 // Si bit GO = 0
+            if(ADCON0bits.CHS == 2){            // Si Input Channel = AN1
+                ADCON0bits.CHS = 1;             // Asignar input Channel = AN0
+                __delay_us(50);                 // Delay de 50 ms
             }
-            else if (ADCON0bits.CHS == 1){  // Si Input Channel = AN0
-                ADCON0bits.CHS = 0;         // Asignar Input Channel = AN1
-                __delay_us(10);
+            else if (ADCON0bits.CHS == 1){      // Si Input Channel = AN0
+                ADCON0bits.CHS = 0;             // Asignar Input Channel = AN1
+                __delay_us(50);                 // Delay de 50 ms
             }
             else {
                 ADCON0bits.CHS = 2;
-                __delay_us(10);
+                __delay_us(50);
             }
-            __delay_us(10);
-            ADCON0bits.GO = 1;              // Asignar bit GO = 1
+            __delay_us(50);
+            ADCON0bits.GO = 1;                  // Asignar bit GO = 1
         } 
     }
 }
@@ -111,80 +112,80 @@ void main(void) {
 void setup(void){
     
     //Configuración de entradas y salidas
-    ANSEL = 0b00000111;                     // Pines 0 y 1 de PORTA como analógicos
+    ANSEL = 0b00000111;                         // Pines 0 y 1 de PORTA como analógicos
     ANSELH = 0;
     
-    TRISA = 0b00000111;                     // PORTA, bit 0 y 1 como entrada analógica
-    TRISC = 0;                              // PORTC como salida
-    TRISD = 0;                              // PORTD como salida                           
-    TRISE = 0;                              // PORTE como salida
+    TRISA = 0b00000111;                         // PORTA, bit 0 y 1 como entrada analógica
+    TRISC = 0;                                  // PORTC como salida
+    TRISD = 0;                                  // PORTD como salida                           
+    TRISE = 0;                                  // PORTE como salida
     
-    PORTD = 0;                              // Limpiar PORTD
-    PORTC = 0;                              // Limpiar PORTC
-    PORTE = 0;                              // Limpiar PORTE
+    PORTD = 0;                                  // Limpiar PORTD
+    PORTC = 0;                                  // Limpiar PORTC
+    PORTE = 0;                                  // Limpiar PORTE
     
     //Configuración de oscilador
-    OSCCONbits.IRCF = 0b0111;               // Oscilador a 8 MHz = 111
+    OSCCONbits.IRCF = 0b0111;                   // Oscilador a 8 MHz = 111
     OSCCONbits.SCS = 1;
     
     //Configuración de TMR0
-    OPTION_REGbits.T0CS = 0;                // bit 5  TMR0 Clock Source Select bit...0 = Internal Clock (CLKO) 1 = Transition on T0CKI pin
-    OPTION_REGbits.T0SE = 0;                // bit 4 TMR0 Source Edge Select bit 0 = low/high 1 = high/low
-    OPTION_REGbits.PSA = 0;                 // bit 3  Prescaler Assignment bit...0 = Prescaler is assigned to the Timer0
-    OPTION_REGbits.PS2 = 1;                 // bits 2-0  PS2:PS0: Prescaler Rate Select bits
-    OPTION_REGbits.PS1 = 1;
-    OPTION_REGbits.PS0 = 1;
-    TMR0 = valor_tmr0;                      // preset for timer register
+    OPTION_REGbits.T0CS = 0;                    // bit 5  TMR0 Clock Source Select bit...0 = Internal Clock (CLKO) 1 = Transition on T0CKI pin
+    OPTION_REGbits.T0SE = 0;                    // bit 4 TMR0 Source Edge Select bit 0 = low/high 1 = high/low
+    OPTION_REGbits.PSA = 1;                     // bit 3  Prescaler Assignment bit...0 = Prescaler is assigned to the WDT
+    OPTION_REGbits.PS2 = 0;                     // bits 2-0  PS2:PS0: Prescaler Rate Select bits
+    OPTION_REGbits.PS1 = 0;
+    OPTION_REGbits.PS0 = 0;
+    TMR0 = valor_tmr0;                          // preset for timer register
     
     //Configuración del ADC
-    ADCON1bits.ADFM = 0;                    // Resultado justificado a la izquierda
-    ADCON1bits.VCFG0 = 0;                   // Voltaje 0 de referencia = VSS
-    ADCON1bits.VCFG1 = 0;                   // Voltaje 1 de referencia = VDD
+    ADCON1bits.ADFM = 0;                        // Resultado justificado a la izquierda
+    ADCON1bits.VCFG0 = 0;                       // Voltaje 0 de referencia = VSS
+    ADCON1bits.VCFG1 = 0;                       // Voltaje 1 de referencia = VDD
     
-    ADCON0bits.ADCS = 0b10;                 // Conversión ADC generada con FOSC/32
-    ADCON0bits.CHS = 0;                     // Input Channel = AN0
-    ADCON0bits.ADON = 1;                    // ADC = enabled
-    __delay_us(50);
+    ADCON0bits.ADCS = 0b10;                     // Conversión ADC generada con FOSC/32
+    ADCON0bits.CHS = 0;                         // Input Channel = AN0
+    ADCON0bits.ADON = 1;                        // ADC = enabled
+    __delay_us(200);
     
     //Configuración de interrupciones
-    INTCONbits.T0IF = 0;                    // Habilitada la bandera de TIMER 0      
-    INTCONbits.T0IE = 1;                    // Habilitar las interrupciones de TIMER 0
-    INTCONbits.GIE = 1;                     // Habilitar interrupciones globales
-    PIR1bits.ADIF = 0;                      // Limpiar bandera de interrupción del ADC
-    PIE1bits.ADIE = 1;                      // Interrupción ADC = enabled
-    INTCONbits.PEIE = 1;                    // Interrupciones periféricas activadas
+    INTCONbits.T0IF = 0;                        // Habilitada la bandera de TIMER 0      
+    INTCONbits.T0IE = 1;                        // Habilitar las interrupciones de TIMER 0
+    INTCONbits.GIE = 1;                         // Habilitar interrupciones globales
+    PIR1bits.ADIF = 0;                          // Limpiar bandera de interrupción del ADC
+    PIE1bits.ADIE = 1;                          // Interrupción ADC = enabled
+    INTCONbits.PEIE = 1;                        // Interrupciones periféricas activadas
     
     //Configuración de PWM
-    TRISCbits.TRISC2 = 1;                   // RC2/CCP1 como entrada
-    TRISCbits.TRISC1 = 1;                   // RC1/CCP2 como entrada
-    PR2 = 255;                              // Frecuencia de TMR2 = 2 us
-    CCP1CONbits.P1M = 0;                    // Solo una salida en CCP1
-    CCP1CONbits.CCP1M = 0b1100;             // Modo de PWM
-    CCP2CONbits.CCP2M = 0b1100;             // Modo de PWM para CCP2
-    
-    CCPR1L = 0x0f;                          // Duty cicle inicial del PWM en CCP1 y CCP2
+    TRISCbits.TRISC2 = 1;                       // RC2/CCP1 como entrada
+    TRISCbits.TRISC1 = 1;                       // RC1/CCP2 como entrada
+    PR2 = 255;                                  // Frecuencia de TMR2 = 2 us
+    CCP1CONbits.P1M = 0;                        // Solo una salida en CCP1
+    CCP1CONbits.CCP1M = 0b1100;                 // Modo de PWM
+    CCP2CONbits.CCP2M = 0b1100;                 // Modo de PWM para CCP2
+        
+    CCPR1L = 0x0f;                              // Duty cicle inicial del PWM en CCP1 y CCP2
     CCPR2L = 0x0f;
-    CCP2CONbits.DC2B0 = 0;                  // Bits menos significativos de CCP2
+    CCP2CONbits.DC2B0 = 0;                      // Bits menos significativos de CCP2
     CCP2CONbits.DC2B1 = 0;
-    CCP1CONbits.DC1B = 0;                   // Bits menor significativos de CCP1
+    CCP1CONbits.DC1B = 0;                       // Bits menor significativos de CCP1
     
     //Configuración del Timer 2
-    PIR1bits.TMR2IF = 0;                    // Limpiar bandera de TMR2
-    T2CONbits.T2CKPS = 0b11;                // Prescaler en 1:16
+    PIR1bits.TMR2IF = 0;                        // Limpiar bandera de TMR2
+    T2CONbits.T2CKPS = 0b11;                    // Prescaler en 1:16
     T2CONbits.TMR2ON = 1;
     
-    while(PIR1bits.TMR2IF == 0);            // Esperar un ciclo de TMR2
-    PIR1bits.TMR2IF = 0;                    // Limpiar bandera de TMR2
+    while(PIR1bits.TMR2IF == 0);                // Esperar un ciclo de TMR2
+    PIR1bits.TMR2IF = 0;                        // Limpiar bandera de TMR2
     
-    TRISCbits.TRISC2 = 0;                   // Salida 1 del PWM en RC2
-    TRISCbits.TRISC1 = 0;                   // Salida 2 del PWM en RC1
+    TRISCbits.TRISC2 = 0;                       // Salida 1 del PWM en RC2
+    TRISCbits.TRISC1 = 0;                       // Salida 2 del PWM en RC1
     
     return;
 }
 
 void tmr0(void){
-    INTCONbits.T0IF = 0;                    // Limpiar bandera de TIMER 0
-    TMR0 = valor_tmr0;                      // TMR0 = 255
+    INTCONbits.T0IF = 0;                        // Limpiar bandera de TIMER 0
+    TMR0 = valor_tmr0;                          // TMR0 = 255
     return;
 }
 

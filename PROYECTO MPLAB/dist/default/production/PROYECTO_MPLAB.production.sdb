@@ -13,11 +13,11 @@
 [v ___memcpyee __memcpyee `(v  1 e 1 0 ]
 "57 D:\Archivos\Documentos\Universidad y colegio\UVG\2021\Segundo Semestre\Programación de Microcontroladores\Laboratorios\Lab 9\Laboratorio-9\PROYECTO MPLAB\LAB9.c
 [v _isr isr `II(v  1 e 1 0 ]
-"87
+"88
 [v _main main `(v  1 e 1 0 ]
-"111
+"112
 [v _setup setup `(v  1 e 1 0 ]
-"185
+"186
 [v _tmr0 tmr0 `(v  1 e 1 0 ]
 "59 C:/Program Files/Microchip/MPLABX/v5.50/packs/Microchip/PIC16Fxxx_DFP/1.2.33/xc8\pic\include\proc\pic16f887.h
 [v _TMR0 TMR0 `VEuc  1 e 1 @1 ]
@@ -224,26 +224,26 @@
 "4322
 [v _T0IF T0IF `VEb  1 e 0 @90 ]
 "43 D:\Archivos\Documentos\Universidad y colegio\UVG\2021\Segundo Semestre\Programación de Microcontroladores\Laboratorios\Lab 9\Laboratorio-9\PROYECTO MPLAB\LAB9.c
-[v _cont cont `i  1 e 2 0 ]
+[v _cont cont `uc  1 e 1 0 ]
 "44
 [v _limite limite `i  1 e 2 0 ]
-"87
+"88
 [v _main main `(v  1 e 1 0 ]
 {
-"108
+"109
 } 0
-"111
+"112
 [v _setup setup `(v  1 e 1 0 ]
 {
-"183
+"184
 } 0
 "57
 [v _isr isr `II(v  1 e 1 0 ]
 {
-"84
+"85
 } 0
-"185
+"186
 [v _tmr0 tmr0 `(v  1 e 1 0 ]
 {
-"189
+"190
 } 0
